@@ -25,24 +25,18 @@ def get(conn, group_id, user_id):
 @commit
 def insert(conn, group_id, user_id):
     with conn.cursor() as cur:
-        rows_affected = cur.execute(
-            f"SELECT * from group_users WHERE group_id={group_id} and user_id={user_id};")
-        # check numnber of rows affected
-        if rows_affected == 0:
+        try:
             rows_affected = cur.execute(
                 f"INSERT INTO group_users(group_id,user_id,count) VALUES ({group_id},{user_id},0);")
+        except:
+            print(f"Failed to add ({group_id},{user_id}) to database!")
 
 
 @commit
 def increase(conn, group_id, user_id):
     with conn.cursor() as cur:
         rows_affected = cur.execute(
-            f"Select * from group_users WHERE group_id={group_id} and user_id={user_id};")
-        # check numnber of rows affected
-        if rows_affected != 0:
-            (group, user, count) = cur.fetchone()
-            rows_affected = cur.execute(
-                f"UPDATE group_users SET count={count+1} WHERE group_id={group_id} and user_id={user_id};")
+            f"UPDATE group_users SET count=count+1 WHERE group_id={group_id} and user_id={user_id};")
 
 
 @commit
@@ -54,6 +48,6 @@ def delete(conn, group_id, user_id):
 
 # conn = connect('localhost', 'root', 'Amirparsa96', 'Ghaar')
 # cur = conn.cursor()
-# delete(conn, 3, 4)
+# delete(conn, 4, 6)
 
 # conn.close()
