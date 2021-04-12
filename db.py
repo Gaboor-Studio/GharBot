@@ -48,6 +48,7 @@ def insert_ghaar_user(conn, group_id, user_id):
             conn.commit()
         except:
             print(f"Failed to add user({group_id},{user_id}) to database!")
+            traceback.print_exc()
 
 
 '''Increases ghaar count for a user in group. If user does not exist in db, it creates the user automatically.'''
@@ -105,6 +106,7 @@ def insert_ghaar_message(conn, group_id, message_id):
         except:
             print(
                 f"Failed to add message({group_id},{message_id}) to database!")
+            traceback.print_exc()
 
 
 '''Deletes a ghaar message from group.'''
