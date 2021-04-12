@@ -27,6 +27,16 @@ def get_ghaar_user(conn, group_id, user_id):
         return cur.fetchone()
 
 
+'''Fetch ghaar user from db by id'''
+
+
+def get_ghaar_user_by_id(conn, user_id):
+    with conn.cursor() as cur:
+        cur.execute(
+            f"SELECT * FROM group_users WHERE user_id={user_id};")
+        return cur.fetchall()
+
+
 '''Fetch group ghaar users from db'''
 
 
@@ -163,11 +173,17 @@ def insert_forwarded_message(conn, message: ForwardedMessage):
                                      message.caption, message.image_hash, message.video_hash)
 
 
+'''Deletes forwarded message from db'''
+
+
 def delete_forwarded_message(conn, group_id, message_id):
     with conn.cursor() as cur:
         cur.execute(
             f"DELETE FROM messages WHERE group_id={group_id} and message_id={message_id};")
     conn.commit()
+
+
+'''deletes forwarded message by group_id'''
 
 
 def delete_forwarded_messages_by_group_id(conn, group_id):
