@@ -1,4 +1,15 @@
 import pymysql
+import traceback
+
+
+class ForwardedMessage:
+
+    def __init__(self, group_id, message_id, caption, image_hash, video_hash):
+        self.group_id = group_id
+        self.message_id = message_id
+        self.caption = caption
+        self.image_hash = image_hash
+        self.video_hash = video_hash
 
 
 def connect(host, user, password, db):
@@ -6,52 +17,62 @@ def connect(host, user, password, db):
     return conn
 
 
-def commit(func):
-    def wrapper_func(conn, group_id, user_id):
-        func(conn, group_id, user_id)
-        conn.commit()
-        conn.cursor().close()
-    return wrapper_func
+'''Fetch ghaar user from db'''
 
 
 def get_ghaar_user(conn, group_id, user_id):
     with conn.cursor() as cur:
         cur.execute(
             f"SELECT * FROM group_users WHERE group_id={group_id} and user_id={user_id};")
-        # check numnber of rows affected
         return cur.fetchone()
+
+
+'''Fetch group ghaar users from db'''
 
 
 def get_group_ghaar_users(conn, group_id):
     with conn.cursor() as cur:
         cur.execute(
             f"SELECT * FROM group_users WHERE group_id={group_id};")
-        # check numnber of rows affected
         return cur.fetchall()
 
 
-@commit
+'''Create a new ghaar user in group'''
+
+
 def insert_ghaar_user(conn, group_id, user_id):
     with conn.cursor() as cur:
         try:
             cur.execute(
                 f"INSERT INTO group_users(group_id,user_id,count) VALUES ({group_id},{user_id},0);")
+            conn.commit()
         except:
             print(f"Failed to add user({group_id},{user_id}) to database!")
 
 
-@commit
+'''Increases ghaar count for a user in group. If user does not exist in db, it creates the user automatically.'''
+
+
 def increase_ghaar_count(conn, group_id, user_id):
+    if get_ghaar_user(conn, group_id, user_id) == None:
+        insert_ghaar_user(conn, group_id, user_id)
     with conn.cursor() as cur:
         cur.execute(
             f"UPDATE group_users SET count=count+1 WHERE group_id={group_id} and user_id={user_id};")
+        conn.commit()
 
 
-@commit
+'''Deletes a ghaar user from db.'''
+
+
 def delete_ghaar_user(conn, group_id, user_id):
     with conn.cursor() as cur:
         cur.execute(
             f"DELETE FROM group_users WHERE group_id={group_id} and user_id={user_id};")
+        conn.commit()
+
+
+'''Fetchs a ghaar message in group.'''
 
 
 def get_ghaar_message(conn, group_id, message_id):
@@ -59,35 +80,96 @@ def get_ghaar_message(conn, group_id, message_id):
         cur.execute(
             f"SELECT * FROM ghaar_messages WHERE group_id={group_id} and message_id={message_id};")
         return cur.fetchone()
+        conn.commit()
 
 
-def get_group_ghaar_messages(conn, group_id):
+'''Fatchs all of ghaar messages in group.'''
+
+
+def get_ghaar_messages_by_group_id(conn, group_id):
     with conn.cursor() as cur:
         cur.execute(
             f"SELECT * FROM ghaar_messages WHERE group_id={group_id};")
         return cur.fetchall()
 
 
-@commit
+'''Adds a new ghaar message in group.'''
+
+
 def insert_ghaar_message(conn, group_id, message_id):
     with conn.cursor() as cur:
         try:
             cur.execute(
                 f"INSERT INTO ghaar_messages(group_id,message_id) VALUES ({group_id},{message_id});")
+            conn.commit()
         except:
             print(
                 f"Failed to add message({group_id},{message_id}) to database!")
 
 
-@commit
+'''Deletes a ghaar message from group.'''
+
+
 def delete_ghaar_message(conn, group_id, message_id):
     with conn.cursor() as cur:
         cur.execute(
             "DELETE FROM ghaar_messages WHERE group_id={group_id} and message_id={message_id};")
+        conn.commit()
 
 
-conn = connect('localhost', 'root', 'Amirparsa96', 'Ghaar')
-cur = conn.cursor()
-# insert_ghaar_message(conn, 2, 12833)
-print(get_group_ghaar_users(conn, 2))
-conn.close()
+'''Fetches a forwarded message in group'''
+
+
+def get_forwarded_message(conn, group_id, message_id):
+    with conn.cursor() as cur:
+        cur.execute(
+            f"SELECT * FROM messages WHERE group_id={group_id} and message_id={message_id};")
+        return cur.fetchone()
+        conn.commit()
+
+
+'''Fetches all forwarded messages by group id'''
+
+
+def get_all_forwarded_messages(conn, group_id):
+    with conn.cursor() as cur:
+        cur.execute(
+            f"SELECT * FROM ghaar_messages WHERE group_id={group_id};")
+        return cur.fetchall()
+
+
+'''Adds a forwarded message to db'''
+
+
+def insert_forwarded_message_by_data(conn, group_id, message_id, caption, image_hash, video_hash):
+    with conn.cursor() as cur:
+        try:
+            cur.execute(f"INSERT INTO messages(group_id,message_id,caption,image_hash,video_hash) VALUES \
+                ({group_id},{message_id},'{caption}','{image_hash}','{video_hash}')")
+            conn.commit()
+        except:
+            print(
+                f"Failed to add forwarded message ({group_id},{message_id},{caption},{image_hash},{video_hash})")
+            traceback.print_exc()
+
+
+'''Adds a forwarded message to db'''
+
+
+def insert_forwarded_message(conn, message: ForwardedMessage):
+    insert_forwarded_message_by_data(conn, message.group_id, message.message_id,
+                                     message.caption, message.image_hash, message.video_hash)
+
+
+def delete_forwarded_message(conn, group_id, message_id):
+    with conn.cursor() as cur:
+        cur.execute(
+            f"DELETE FROM messages WHERE group_id={group_id} and message_id={message_id};")
+    conn.commit()
+
+
+def delete_forwarded_messages_by_group_id(conn, group_id):
+    with conn.cursor() as cur:
+        cur.execute(
+            f"DELETE FROM messages WHERE group_id={group_id};")
+    conn.commit()
