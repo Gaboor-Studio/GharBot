@@ -43,18 +43,18 @@ def get_ghaar_user_by_id(conn, user_id):
 def get_group_ghaar_users(conn, group_id):
     with conn.cursor() as cur:
         cur.execute(
-            f"SELECT * FROM group_users WHERE group_id={group_id};")
+            f"SELECT * FROM group_users WHERE group_id={group_id} ORDER BY count DESC;")
         return cur.fetchall()
 
 
 '''Create a new ghaar user in group'''
 
 
-def insert_ghaar_user(conn, group_id, user_id):
+def insert_ghaar_user(conn, group_id, user_id, user_name):
     with conn.cursor() as cur:
         try:
             cur.execute(
-                f"INSERT INTO group_users(group_id,user_id,count) VALUES ({group_id},{user_id},0);")
+                f"INSERT INTO group_users(group_id,user_id,user_name,count) VALUES ({group_id},{user_id},'{user_name}',0);")
             conn.commit()
         except:
             print(f"Failed to add user({group_id},{user_id}) to database!")
@@ -65,8 +65,6 @@ def insert_ghaar_user(conn, group_id, user_id):
 
 
 def increase_ghaar_count(conn, group_id, user_id):
-    if get_ghaar_user(conn, group_id, user_id) == None:
-        insert_ghaar_user(conn, group_id, user_id)
     with conn.cursor() as cur:
         cur.execute(
             f"UPDATE group_users SET count=count+1 WHERE group_id={group_id} and user_id={user_id};")

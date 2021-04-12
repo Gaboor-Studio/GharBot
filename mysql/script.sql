@@ -6,6 +6,7 @@ DROP TABLE IF EXISTS group_users;
 CREATE TABLE group_users(
 	`group_id` VARCHAR(20),
 	`user_id` VARCHAR(20),
+	`user_name` VARCHAR(20) NOT NULL,
 	`count` INT NOT NULL,
 	PRIMARY KEY(`group_id`,`user_id`)
 );
