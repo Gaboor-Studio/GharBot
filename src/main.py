@@ -7,18 +7,24 @@ import json
 from PIL import Image
 import logging
 import comparator
-
-
+import threading
+import time
 
 TOKEN = '1769102250:AAEAEww2WgyvfKMq4nOfbLy61JR55rAcnzk'
 
 updater = Updater(token=TOKEN, use_context=True)
 bot = telegram.Bot(TOKEN)
 
-ghaar_rejects = []
+keyboard = [[InlineKeyboardButton('بود', callback_data='2')], [InlineKeyboardButton('نبود', callback_data='1')]]
+mark_up = InlineKeyboardMarkup(keyboard)
 
-conn = db.connect('localhost', 'root', 'sajadcr7', 'Ghaar')
-#logging.basicConfig(level=logging.DEBUG,format='%(asctime)s-%(name)s-%(levelname)s-%(message)s')
+ghaar_rejects = []
+ghaar_accepts = []
+
+conn = db.connect('localhost', 'root', 'helli6ha', 'Ghaar')
+
+
+# logging.basicConfig(level=logging.DEBUG,format='%(asctime)s-%(name)s-%(levelname)s-%(message)s')
 
 def get_markdown_call(name, id):
     return name
@@ -33,51 +39,57 @@ def is_ghaar(text):
 
 def button(update: telegram.Update, context: telegram.ext.CallbackContext):
     query = update.callback_query
-    ghaar_rejects.append(query.from_user.id)
-    query.edit_message_text(text='غار بمولا\n' + str(len(ghaar_rejects)) + 'گفتن غار نیس',
-                            reply_markup=InlineKeyboardMarkup([[
-                                InlineKeyboardButton('غار نبود',callback_data='1')]]), parse_mode="Markdown")
+    if query.from_user['id'] in ghaar_rejects or query.from_user['id'] in ghaar_rejects:
+        print('hi')
+    else:
+        if query.data == 1:
+            ghaar_rejects.append(query.from_user['id'])
+        else:
+            ghaar_accepts.append(query.from_user['id'])
+        message = str(len(ghaar_accepts)) + ' people accept Ghaar and ' + str(
+            len(ghaar_rejects)) + ' people reject Ghaar '
+        ghaar_rejects.append(query.from_user.id)
+        query.edit_message_text(text='غار بمولا\n' + message,
+                                reply_markup=mark_up)
+
 
 def forward_handler(update: telegram.Update, context: telegram.ext.CallbackContext):
     group_id = update.message.chat_id
-    chat_id=update.message.message_id
+    chat_id = update.message.message_id
 
-    text=""
+    text = ""
     try:
         text = update.message.text
     except:
         pass
-    imgpic_id=update.message.photo[-1].file_id
-    picurl=f"https://api.telegram.org/bot{TOKEN}/getFile?file_id={imgpic_id}"
-    tt=requests.get(picurl)
-    tt=tt.json()
-    file_path=tt["result"]["file_path"]
-    pic_to_download=f"https://api.telegram.org/file/bot{TOKEN}/{file_path}"
-    imgpic=Image.open(requests.get(pic_to_download, stream=True).raw)
-    hash_img=comparator.gethash_by_image(imgpic)
-    all_forwarded=db.get_all_forwarded_messages(conn,group_id)
-    if len(all_forwarded)==0:
-        db.insert_forwarded_message_by_data(conn,group_id,chat_id,text,hash_img,"")
+    imgpic_id = update.message.photo[-1].file_id
+    picurl = f"https://api.telegram.org/bot{TOKEN}/getFile?file_id={imgpic_id}"
+    tt = requests.get(picurl)
+    tt = tt.json()
+    file_path = tt["result"]["file_path"]
+    pic_to_download = f"https://api.telegram.org/file/bot{TOKEN}/{file_path}"
+    imgpic = Image.open(requests.get(pic_to_download, stream=True).raw)
+    hash_img = comparator.gethash_by_image(imgpic)
+    all_forwarded = db.get_all_forwarded_messages(conn, group_id)
+    if len(all_forwarded) == 0:
+        db.insert_forwarded_message_by_data(conn, group_id, chat_id, text, hash_img, "")
     else:
-        ghaar_flag=False
-        ghaar_message_id=""
+        ghaar_flag = False
+        ghaar_message_id = ""
         for forwarded_message in all_forwarded:
-            second_hash=forwarded_message[3]
-            #print(second_hash)
-            if comparator.compare_pics_hash(hash_img,second_hash):
-                ghaar_flag=True
-                ghaar_message_id=forwarded_message[1]
+            second_hash = forwarded_message[3]
+            # print(second_hash)
+            if comparator.compare_pics_hash(hash_img, second_hash):
+                ghaar_flag = True
+                ghaar_message_id = forwarded_message[1]
                 break
             else:
                 pass
         if ghaar_flag:
             update.message.reply_text(text="I think YOU ARE GHAAAR!")
-            context.bot.send_message(chat_id=group_id,text="Inam madrak",reply_to_message_id=ghaar_message_id)
+            context.bot.send_message(chat_id=group_id, text="Inam madrak", reply_to_message_id=ghaar_message_id)
         else:
             db.insert_forwarded_message_by_data(conn, group_id, chat_id, text, hash_img, "")
-
-
-
 
 
 def text_handler(update: telegram.Update, context: telegram.ext.CallbackContext):
@@ -98,11 +110,19 @@ def text_handler(update: telegram.Update, context: telegram.ext.CallbackContext)
                         conn, chat_id, ghaar_user_id, ghaar_user_name)
                 db.increase_ghaar_count(conn, chat_id, ghaar_user_id)
                 db.insert_ghaar_message(conn, chat_id, ghaar_message_id)
-                keyboard = [[InlineKeyboardButton('غار نبود', callback_data='1')]]
-                mark_up = InlineKeyboardMarkup(keyboard)
-                update.message.reply_to_message.reply_text(text="غار بمولا",
-                                                           reply_markup=mark_up,
-                                                           parse_mode="Markdown")
+                message = update.message.reply_to_message.reply_text(text="غار بمولا",
+                                                                     reply_markup=mark_up,
+                                                                     parse_mode="Markdown")
+
+                #We want something to pause a minute and then run rest of program
+                #It's not time.sleep because it will stop counting votes its like thread
+
+                if len(ghaar_accepts) >= len(ghaar_rejects):
+                    message.edit_text(text='غار بمولا')
+                else:
+                    message.edit_text(text='اتهام غاری رفع شد')
+                ghaar_rejects.clear()
+                ghaar_accepts.clear()
             else:
                 update.message.reply_to_message.reply_text(
                     text="انقد غار بودی نفهمیدی این غار بوده!")
@@ -129,7 +149,7 @@ def stats_group(update: telegram.Update, context: telegram.ext.CallbackContext):
     result = db.get_group_ghaar_users(conn, chat_id)
     message = "سربازان گمنام پیرو\n"
     for i, tup in enumerate(result):
-        message += f"{i + 1}. {get_markdown_call(tup[2], tup[1])} : {tup[3]} غاااار! \n"
+        message = message + str(i + 1) + '. ' + tup[2] + ' : ' + str(tup[3]) + '  Ghaar'
     update.message.reply_text(text=message)
 
 
