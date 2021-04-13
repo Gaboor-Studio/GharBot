@@ -144,7 +144,7 @@ def get_forwarded_message(conn, group_id, message_id):
 def get_all_forwarded_messages(conn, group_id):
     with conn.cursor() as cur:
         cur.execute(
-            f"SELECT * FROM ghaar_messages WHERE group_id={group_id};")
+            f"SELECT * FROM messages WHERE group_id={group_id};")
         return cur.fetchall()
 
 

@@ -29,7 +29,7 @@ def compare_pics_hash(hash_str1,hash_str2):
     hash1=imagehash.hex_to_hash(hash_str1)
     hash2=imagehash.hex_to_hash(hash_str2)
     # Minus operand in imagehash library has defined like abs of minus . so we don't need to get abs of the result .
-    if hash1-hash2 <=1 :
+    if hash1-hash2 <=5 :
         #print(hash1 - hash2)
         return True
     else:

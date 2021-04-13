@@ -2,7 +2,13 @@ import telegram
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup, ReplyKeyboardRemove
 from telegram.ext import Updater, CommandHandler, CallbackQueryHandler, MessageHandler, Filters
 import db
+import requests
+import json
+from PIL import Image
+import logging
 import comparator
+
+
 
 TOKEN = '1769102250:AAEAEww2WgyvfKMq4nOfbLy61JR55rAcnzk'
 
@@ -11,8 +17,8 @@ bot = telegram.Bot(TOKEN)
 
 ghaar_rejects = []
 
-conn = db.connect('localhost', 'root', 'helli6ha', 'Ghaar')
-
+conn = db.connect('localhost', 'root', 'sajadcr7', 'Ghaar')
+#logging.basicConfig(level=logging.DEBUG,format='%(asctime)s-%(name)s-%(levelname)s-%(message)s')
 
 def get_markdown_call(name, id):
     return name
@@ -31,6 +37,47 @@ def button(update: telegram.Update, context: telegram.ext.CallbackContext):
     query.edit_message_text(text='غار بمولا\n' + str(len(ghaar_rejects)) + 'گفتن غار نیس',
                             reply_markup=InlineKeyboardMarkup([[
                                 InlineKeyboardButton('غار نبود',callback_data='1')]]), parse_mode="Markdown")
+
+def forward_handler(update: telegram.Update, context: telegram.ext.CallbackContext):
+    group_id = update.message.chat_id
+    chat_id=update.message.message_id
+
+    text=""
+    try:
+        text = update.message.text
+    except:
+        pass
+    imgpic_id=update.message.photo[-1].file_id
+    picurl=f"https://api.telegram.org/bot{TOKEN}/getFile?file_id={imgpic_id}"
+    tt=requests.get(picurl)
+    tt=tt.json()
+    file_path=tt["result"]["file_path"]
+    pic_to_download=f"https://api.telegram.org/file/bot{TOKEN}/{file_path}"
+    imgpic=Image.open(requests.get(pic_to_download, stream=True).raw)
+    hash_img=comparator.gethash_by_image(imgpic)
+    all_forwarded=db.get_all_forwarded_messages(conn,group_id)
+    if len(all_forwarded)==0:
+        db.insert_forwarded_message_by_data(conn,group_id,chat_id,text,hash_img,"")
+    else:
+        ghaar_flag=False
+        ghaar_message_id=""
+        for forwarded_message in all_forwarded:
+            second_hash=forwarded_message[3]
+            #print(second_hash)
+            if comparator.compare_pics_hash(hash_img,second_hash):
+                ghaar_flag=True
+                ghaar_message_id=forwarded_message[1]
+                break
+            else:
+                pass
+        if ghaar_flag:
+            update.message.reply_text(text="I think YOU ARE GHAAAR!")
+            context.bot.send_message(chat_id=group_id,text="Inam madrak",reply_to_message_id=ghaar_message_id)
+        else:
+            db.insert_forwarded_message_by_data(conn, group_id, chat_id, text, hash_img, "")
+
+
+
 
 
 def text_handler(update: telegram.Update, context: telegram.ext.CallbackContext):
@@ -84,11 +131,8 @@ def stats_group(update: telegram.Update, context: telegram.ext.CallbackContext):
     for i, tup in enumerate(result):
         message += f"{i + 1}. {get_markdown_call(tup[2], tup[1])} : {tup[3]} غاااار! \n"
     update.message.reply_text(text=message)
-def forward_handler(update: telegram.Update):
-    group_id = update.message.chat_id
-    all_forwarded=db.get_all_forwarded_messages(conn,group_id)
 
-    print(all_forwarded)
+
 dispatcher = updater.dispatcher
 dispatcher.add_handler(CallbackQueryHandler(button))
 dispatcher.add_handler(MessageHandler(Filters.reply, text_handler))
