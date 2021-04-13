@@ -2,6 +2,7 @@ import telegram
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup, ReplyKeyboardRemove
 from telegram.ext import Updater, CommandHandler, CallbackQueryHandler, MessageHandler, Filters
 import db
+import comparator
 
 TOKEN = '1769102250:AAEAEww2WgyvfKMq4nOfbLy61JR55rAcnzk'
 
@@ -83,11 +84,15 @@ def stats_group(update: telegram.Update, context: telegram.ext.CallbackContext):
     for i, tup in enumerate(result):
         message += f"{i + 1}. {get_markdown_call(tup[2], tup[1])} : {tup[3]} غاااار! \n"
     update.message.reply_text(text=message)
+def forward_handler(update: telegram.Update):
+    group_id = update.message.chat_id
+    all_forwarded=db.get_all_forwarded_messages(conn,group_id)
 
-
+    print(all_forwarded)
 dispatcher = updater.dispatcher
 dispatcher.add_handler(CallbackQueryHandler(button))
 dispatcher.add_handler(MessageHandler(Filters.reply, text_handler))
+dispatcher.add_handler(MessageHandler(Filters.forwarded, forward_handler))
 dispatcher.add_handler(CommandHandler("stats_group", stats_group))
 dispatcher.add_handler(CommandHandler("stats_person", stats_person))
 dispatcher.add_handler(CommandHandler("start", start))
