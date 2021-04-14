@@ -15,12 +15,11 @@ TOKEN = '1769102250:AAEAEww2WgyvfKMq4nOfbLy61JR55rAcnzk'
 updater = Updater(token=TOKEN, use_context=True)
 bot = telegram.Bot(TOKEN)
 
-keyboard = [[InlineKeyboardButton('بود', callback_data='2')], [InlineKeyboardButton('نبود', callback_data='1')]]
+keyboard = [[InlineKeyboardButton('بود', callback_data='1')], [InlineKeyboardButton('نبود', callback_data='2')]]
 mark_up = InlineKeyboardMarkup(keyboard)
 
 ghaar_rejects = []
 ghaar_accepts = []
-
 conn = db.connect('localhost', 'root', 'helli6ha', 'Ghaar')
 
 
@@ -39,18 +38,25 @@ def is_ghaar(text):
 
 def button(update: telegram.Update, context: telegram.ext.CallbackContext):
     query = update.callback_query
-    if query.from_user['id'] in ghaar_rejects or query.from_user['id'] in ghaar_rejects:
-        print('hi')
-    else:
-        if query.data == 1:
+    if query.from_user['id'] not in ghaar_accepts and query.from_user['id'] not in ghaar_rejects:
+        if query.data == '2':
             ghaar_rejects.append(query.from_user['id'])
-        else:
+        elif query.data == '1':
             ghaar_accepts.append(query.from_user['id'])
         message = str(len(ghaar_accepts)) + ' people accept Ghaar and ' + str(
             len(ghaar_rejects)) + ' people reject Ghaar '
-        ghaar_rejects.append(query.from_user.id)
         query.edit_message_text(text='غار بمولا\n' + message,
-                                reply_markup=mark_up)
+                            reply_markup=mark_up)
+
+
+def ghaar_check_res(message):
+    print('hi')
+    if len(ghaar_accepts) >= len(ghaar_rejects):
+        message.edit_text(text='غار بمولا')
+    else:
+        message.edit_text(text='اتهام غاری رفع شد')
+    ghaar_rejects.clear()
+    ghaar_accepts.clear()
 
 
 def forward_handler(update: telegram.Update, context: telegram.ext.CallbackContext):
@@ -113,16 +119,10 @@ def text_handler(update: telegram.Update, context: telegram.ext.CallbackContext)
                 message = update.message.reply_to_message.reply_text(text="غار بمولا",
                                                                      reply_markup=mark_up,
                                                                      parse_mode="Markdown")
-
-                #We want something to pause a minute and then run rest of program
-                #It's not time.sleep because it will stop counting votes its like thread
-
-                if len(ghaar_accepts) >= len(ghaar_rejects):
-                    message.edit_text(text='غار بمولا')
-                else:
-                    message.edit_text(text='اتهام غاری رفع شد')
-                ghaar_rejects.clear()
-                ghaar_accepts.clear()
+                timer=threading.Timer(15,ghaar_check_res,args=message)
+                print('start')
+                timer.start()
+                print('hii')
             else:
                 update.message.reply_to_message.reply_text(
                     text="انقد غار بودی نفهمیدی این غار بوده!")
