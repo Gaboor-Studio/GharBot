@@ -85,6 +85,8 @@ def forward_handler(update: telegram.Update, context: telegram.ext.CallbackConte
             ghaar_message_id = ""
             for forwarded_message in all_forwarded:
                 second_hash = forwarded_message[3]
+                if second_hash=="":
+                    continue
                 # print(second_hash)
                 if comparator.compare_pics_hash(hash_img, second_hash):
                     ghaar_flag = True
@@ -97,10 +99,10 @@ def forward_handler(update: telegram.Update, context: telegram.ext.CallbackConte
                 context.bot.send_message(chat_id=group_id, text="اینم مدرک", reply_to_message_id=ghaar_message_id)
             else:
                 db.insert_forwarded_message_by_data(conn, group_id, chat_id, text, hash_img, "")
-        print("this was pic")
+        #print("this was pic")
         return
     except:
-        print("no pic")
+        #print("no pic")
         pass
     try:
         vid_details=update.message.video
@@ -123,6 +125,8 @@ def forward_handler(update: telegram.Update, context: telegram.ext.CallbackConte
                 ghaar_message_id = ""
                 for forwarded_message in all_forwarded:
                     second_hash = forwarded_message[4]
+                    if second_hash=="":
+                        continue
                     # print(second_hash)
                     if comparator.compare_videos(hash_vid,second_hash):
                         ghaar_flag = True
