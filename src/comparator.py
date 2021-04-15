@@ -44,7 +44,8 @@ def compare_videos(hash_vid1,hash_vid2):
     diffrence_number=0
     for i in range(0,len(first_hasharray)-1):
         diffrence_number+=(imagehash.hex_to_hash(first_hasharray[i])-imagehash.hex_to_hash(second_hasharray[i]))
-    if diffrence_number<=10:
+    print(diffrence_number)
+    if diffrence_number<=80:
         return True
     else:
         return False

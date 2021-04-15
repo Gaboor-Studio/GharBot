@@ -20,7 +20,7 @@ mark_up = InlineKeyboardMarkup(keyboard)
 
 ghaar_rejects = []
 ghaar_accepts = []
-conn = db.connect('localhost', 'root', 'helli6ha', 'Ghaar')
+conn = db.connect('localhost', 'root', 'sajadcr7', 'Ghaar')
 
 
 # logging.basicConfig(level=logging.DEBUG,format='%(asctime)s-%(name)s-%(levelname)s-%(message)s')
@@ -68,34 +68,79 @@ def forward_handler(update: telegram.Update, context: telegram.ext.CallbackConte
         text = update.message.text
     except:
         pass
-    imgpic_id = update.message.photo[-1].file_id
-    picurl = f"https://api.telegram.org/bot{TOKEN}/getFile?file_id={imgpic_id}"
-    tt = requests.get(picurl)
-    tt = tt.json()
-    file_path = tt["result"]["file_path"]
-    pic_to_download = f"https://api.telegram.org/file/bot{TOKEN}/{file_path}"
-    imgpic = Image.open(requests.get(pic_to_download, stream=True).raw)
-    hash_img = comparator.gethash_by_image(imgpic)
-    all_forwarded = db.get_all_forwarded_messages(conn, group_id)
-    if len(all_forwarded) == 0:
-        db.insert_forwarded_message_by_data(conn, group_id, chat_id, text, hash_img, "")
-    else:
-        ghaar_flag = False
-        ghaar_message_id = ""
-        for forwarded_message in all_forwarded:
-            second_hash = forwarded_message[3]
-            # print(second_hash)
-            if comparator.compare_pics_hash(hash_img, second_hash):
-                ghaar_flag = True
-                ghaar_message_id = forwarded_message[1]
-                break
-            else:
-                pass
-        if ghaar_flag:
-            update.message.reply_text(text="I think YOU ARE GHAAAR!")
-            context.bot.send_message(chat_id=group_id, text="Inam madrak", reply_to_message_id=ghaar_message_id)
-        else:
+    try:
+        imgpic_id = update.message.photo[-1].file_id
+        picurl = f"https://api.telegram.org/bot{TOKEN}/getFile?file_id={imgpic_id}"
+        tt = requests.get(picurl)
+        tt = tt.json()
+        file_path = tt["result"]["file_path"]
+        pic_to_download = f"https://api.telegram.org/file/bot{TOKEN}/{file_path}"
+        imgpic = Image.open(requests.get(pic_to_download, stream=True).raw)
+        hash_img = comparator.gethash_by_image(imgpic)
+        all_forwarded = db.get_all_forwarded_messages(conn, group_id)
+        if len(all_forwarded) == 0:
             db.insert_forwarded_message_by_data(conn, group_id, chat_id, text, hash_img, "")
+        else:
+            ghaar_flag = False
+            ghaar_message_id = ""
+            for forwarded_message in all_forwarded:
+                second_hash = forwarded_message[3]
+                # print(second_hash)
+                if comparator.compare_pics_hash(hash_img, second_hash):
+                    ghaar_flag = True
+                    ghaar_message_id = forwarded_message[1]
+                    break
+                else:
+                    pass
+            if ghaar_flag:
+                update.message.reply_text(text="غااااار!")
+                context.bot.send_message(chat_id=group_id, text="اینم مدرک", reply_to_message_id=ghaar_message_id)
+            else:
+                db.insert_forwarded_message_by_data(conn, group_id, chat_id, text, hash_img, "")
+        print("this was pic")
+        return
+    except:
+        print("no pic")
+        pass
+    try:
+        vid_details=update.message.video
+        vid_id = vid_details["thumb"]["file_size"]
+        if vid_id>15000:
+            update.message.reply_text(text="به علت بالا بودن حجم ویدیو و ناتوانی سرور ها هرگونه غارشدن احتمالی با مسئولیت خود فرستنده می باشد")
+        else:
+            file_id=vid_details["file_id"]
+            fileurl = f"https://api.telegram.org/bot{TOKEN}/getFile?file_id={file_id}"
+            tt = requests.get(fileurl)
+            tt = tt.json()
+            file_path = tt["result"]["file_path"]
+            pic_to_download = f"https://api.telegram.org/file/bot{TOKEN}/{file_path}"
+            hash_vid=comparator.gethasharray_by_video(pic_to_download)
+            all_forwarded = db.get_all_forwarded_messages(conn, group_id)
+            if len(all_forwarded) == 0:
+                db.insert_forwarded_message_by_data(conn, group_id, chat_id, text, "", hash_vid)
+            else:
+                ghaar_flag = False
+                ghaar_message_id = ""
+                for forwarded_message in all_forwarded:
+                    second_hash = forwarded_message[4]
+                    # print(second_hash)
+                    if comparator.compare_videos(hash_vid,second_hash):
+                        ghaar_flag = True
+                        ghaar_message_id = forwarded_message[1]
+                        break
+                    else:
+                        pass
+                if ghaar_flag:
+                    update.message.reply_text(text="غااااار!")
+                    context.bot.send_message(chat_id=group_id, text="اینم مدرک", reply_to_message_id=ghaar_message_id)
+                else:
+                    print("not ghar")
+                    db.insert_forwarded_message_by_data(conn, group_id, chat_id, text, "",hash_vid)
+        #print(vid_details)
+        return
+    except:
+        #print("ridam")
+        pass
 
 
 def text_handler(update: telegram.Update, context: telegram.ext.CallbackContext):
