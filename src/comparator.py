@@ -38,14 +38,18 @@ def compare_pics_hash(hash_str1,hash_str2):
 
 def compare_videos(hash_vid1,hash_vid2):
     if len(hash_vid1)!=len(hash_vid2):
+        #print("not len")
         return False
     first_hasharray=hash_vid1.split(",")
     second_hasharray=hash_vid2.split(",")
     diffrence_number=0
     for i in range(0,len(first_hasharray)-1):
         diffrence_number+=(imagehash.hex_to_hash(first_hasharray[i])-imagehash.hex_to_hash(second_hasharray[i]))
+    #print("length :",len(first_hasharray))
     #print(diffrence_number)
-    if diffrence_number<=80:
+    precision=(1.0*diffrence_number)/len(first_hasharray)
+    #print(precision)
+    if precision<0.5:
         return True
     else:
         return False
@@ -60,4 +64,4 @@ def test_compare_videos():
     #compare_videos("https://raw.githubusercontent.com/akamhy/videohash/main/assets/rocket.mkv","https://www.youtube.com/watch?v=PapBjpzRhnA")
     print(compare_videos(gethasharray_by_video("first.mp4"),gethasharray_by_video("second.mp4")))
 #test_compare_pics()
-test_compare_videos()
+#test_compare_videos()

@@ -120,6 +120,7 @@ def forward_handler(update: telegram.Update, context: telegram.ext.CallbackConte
             all_forwarded = db.get_all_forwarded_messages(conn, group_id)
             if len(all_forwarded) == 0:
                 db.insert_forwarded_message_by_data(conn, group_id, chat_id, text, "", hash_vid)
+                print("done")
             else:
                 ghaar_flag = False
                 ghaar_message_id = ""
@@ -143,7 +144,7 @@ def forward_handler(update: telegram.Update, context: telegram.ext.CallbackConte
         #print(vid_details)
         return
     except:
-        #print("ridam")
+        print("ridam")
         pass
 
 
